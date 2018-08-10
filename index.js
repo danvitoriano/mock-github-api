@@ -7,7 +7,15 @@ var app = express();
 app.use(cors());
 
 app.get('/users/:username', function (req, res) {
-  res.send(prepare(USER_TEMPLATE, {':username': req.params.username}));
+  var params = {':username': req.params.username};
+  console.log(req.params.username) // OUTPUT USERNAME ON MACHINE
+  if(req.params.username == 'user not found'){
+    res.status(404).send('User not found :(');
+  } else if(req.params.username == 'limit requests'){
+    res.status(403).send('LIMIT REQUESTS');
+  } else {
+    res.send(prepare(USER_TEMPLATE, {':username': req.params.username}));
+  }
 });
 
 app.get('/users/:username/orgs', function (req, res) {
@@ -19,6 +27,18 @@ app.get('/users/:username/orgs', function (req, res) {
     JSON.parse(prepare(ORG_TEMPLATE, params)),
     JSON.parse(prepare(ORG_TEMPLATE, params)),
     JSON.parse(prepare(ORG_TEMPLATE, params))
+  ]));
+});
+
+app.get('/users/:username/starred', function (req, res) {
+  var params = {':username': req.params.username};
+
+  res.send(JSON.stringify([
+    JSON.parse(prepare(STARRED_TEMPLATE, params)),
+    JSON.parse(prepare(STARRED_TEMPLATE, params)),
+    JSON.parse(prepare(STARRED_TEMPLATE, params)),
+    JSON.parse(prepare(STARRED_TEMPLATE, params)),
+    JSON.parse(prepare(STARRED_TEMPLATE, params))
   ]));
 });
 
@@ -40,9 +60,9 @@ app.get('/users/:username/repos', function (req, res)  {
   ]));
 });
 
-app.listen(3000);
+app.listen(5000);
 
-console.log('mock-github-api listening on port 3000');
+console.log('mock-github-api listening on port 5000');
 
 function prepare(template, params) {
   if (typeof template === 'object') {
@@ -87,8 +107,16 @@ var TOKENS = {
     return faker.random.word();
   },
 
+  ':random_company': function () {
+    return faker.company.companyName();
+  },
+
   ':random_description': function () {
     return faker.random.words();
+  },
+
+  ':random_bio': function () {
+    return faker.lorem.sentence();
   },
 
   ':random_location': function () {
@@ -100,6 +128,11 @@ var TOKENS = {
     var g = Math.round(Math.random() * 255);
     var b = Math.round(Math.random() * 255);
     return color({r, g, b}).hexString().replace(/^#/, '');
+  },
+
+  ':random_stargazers': function () {
+    var stars_count = Math.round(Math.random() * 255);
+    return stars_count;
   }
 };
 
@@ -122,12 +155,12 @@ var USER_TEMPLATE = {
   "type": "User",
   "site_admin": false,
   "name": ":username",
-  "company": null,
+  "company": ":random_company",
   "blog": null,
   "location": ":random_location",
   "email": ":random_email",
   "hireable": null,
-  "bio": null,
+  "bio": ":random_bio",
   "public_repos": ":random_number",
   "public_gists": ":random_number",
   "followers": ":random_number",
@@ -209,7 +242,7 @@ var REPO_TEMPLATE = {
   "svn_url": "https://github.com/:username/:random_name",
   "homepage": null,
   "size": ":random_number",
-  "stargazers_count": 0,
+  "stargazers_count": ":random_stargazers",
   "watchers_count": 0,
   "language": "JavaScript",
   "has_issues": false,
@@ -237,4 +270,14 @@ var ORG_TEMPLATE = {
   "public_members_url": "https://api.github.com/orgs/:random_name/public_members{/member}",
   "avatar_url": "https://placehold.it/460/:random_color/ffffff?text=:random_name",
   "description": ":random_description"
+};
+
+var STARRED_TEMPLATE = {
+  "id": ":random_number",
+  "name": ":random_name",
+  "full_name": ":username/:random_name",
+  "owner": {
+    "login": ":username",
+    "id": 199035
+   }
 };
